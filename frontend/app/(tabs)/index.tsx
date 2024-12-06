@@ -21,14 +21,14 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.slogan, { fontFamily: "Michroma" }]}>
+      <Text style={[styles.heading2, { fontFamily: "Michroma" }]}>
         Hello ______!
       </Text>
       <Image
         source={require("../../assets/images/quash-the-quish-logo.png")}
         style={styles.image}
       />
-      <Text style={[styles.slogan, { fontFamily: "Michroma" }]}>
+      <Text style={[styles.heading2, { fontFamily: "Michroma" }]}>
         Scan or Upload to Test your QR Code
       </Text>
       <View style={styles.actionsContainer}>
