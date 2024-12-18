@@ -13,11 +13,17 @@ CORS(app)
 # Defining the URL to trigger the validate function via a POST request
 @app.route('/validate', methods=['POST'])
 
+# Creating the validate function to receive the POST request
 def validate():
+    # Assigning the JSON (retrieved from the POST request) to the variable data
     data = request.json
+    # Assigning the value of the 'qrCode' key in the JSON to the variable qrCode
     qrCode = data['qrCode']
+    # Assigning the result of the qrCodeAnalyser function (with the qrCode as an argument) to the variable result
     result = qrCodeAnalyser(qrCode)
+    # Returning the result as a JSON object
     return jsonify(result)
 
+# Running the Flask app (with debugging enabled)
 if __name__ == '__main__':
     app.run(debug=True)
