@@ -17,10 +17,10 @@ CORS(app)
 def validate():
     # Assigning the JSON (retrieved from the POST request) to the variable data
     data = request.json
-    # Assigning the value of the 'qrCode' key in the JSON to the variable qrCode
-    qrCode = data['qrCode']
+    # Assigning the value of the 'url' key in the JSON to the variable qrCode
+    qrCode = data['url']
     # Assigning the result of the qrCodeAnalyser function (with the qrCode as an argument) to the variable result
-    result = qrCodeAnalyser(qrCode)
+    result = urlAnalyser(url)
     # Returning the result as a JSON object
     return jsonify(result)
 
