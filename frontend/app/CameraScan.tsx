@@ -20,7 +20,7 @@ export default function CameraScan() {
   // use state to store and manage scanning status
   const [isScanning, setIsScanning] = useState(true);
 
-  // handling when camera permissions have not yet loaded (based on expo-camera documentation)
+  // handling when camera permissions have not yet loaded (based on expo-camera documentation: https://docs.expo.dev/versions/latest/sdk/camera/)
   if (!hasPermission) {
     return (
       <View style={styles.container}>
@@ -29,7 +29,7 @@ export default function CameraScan() {
     );
   }
 
-  // handling when camera permissions are not yet granted (based on expo-camera documentation)
+  // handling when camera permissions are not yet granted (based on expo-camera documentation: https://docs.expo.dev/versions/latest/sdk/camera/)
   if (!hasPermission.granted) {
     return (
       <View style={styles.container}>
@@ -44,7 +44,69 @@ export default function CameraScan() {
     );
   }
 
-  return <View style={styles.container} />;
+  // handling qr code scanning
+  const handleQrCodeScanned = ({ data }: { data: string }) => {
+    // stop scanning
+    setIsScanning(false);
+    // check for link
+    if (!data.startsWith("http://") && !data.startsWith("https://")) {
+      Alert.alert("No URL Found", "This is not a Quishing Attempt!");
+      return;
+    }
+
+    // send link to backend
+    fetch("http://localhost:5000/validate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ url: data }),
+    })
+      // handle response from backend (quishing or not)
+      .then((response) => response.json())
+      .then((result) => {
+        if (result.result === "bad") {
+          Alert.alert(
+            "Oh no! This website has been deemed malicious. Best to give it a miss!"
+          );
+        } else {
+          Alert.alert(
+            "Safe!",
+            "This QR code looks safe! Would you like to proceed to the webpage?",
+            [
+              { text: "No", style: "cancel" },
+              { text: "Yes", onPress: () => Linking.openURL(data) },
+            ]
+          );
+        }
+      })
+      // if there is an error, log the error and show an alert for the user
+      .catch((error) => {
+        console.error("Error:", error);
+        Alert.alert("Error", "Unable to validate the QR code at the moment.");
+      });
+  };
+
+  return (
+    <View style={styles.container}>
+      {/* camera view */}
+      <CameraView
+        facing={cameraType}
+        onBarcodeScanned={isScanning ? handleQrCodeScanned : undefined}
+        barcodeScannerSettings={{
+          barcodeTypes: ["qr"],
+        }}
+      />
+      {/* button to switch camera type (front/back) */}
+      <TouchableOpacity
+        onPress={() =>
+          setCameraType((prev) => (prev === "back" ? "front" : "back"))
+        }
+      >
+        <Text style={styles.text}>Flip Camera</Text>
+      </TouchableOpacity>
+    </View>
+  );
 }
 
 // styles for the CameraScan component
