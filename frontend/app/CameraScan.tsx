@@ -8,6 +8,8 @@ import {
   TouchableOpacity,
   Linking,
 } from "react-native";
+// import icon for camera flip button
+import { Ionicons } from "@expo/vector-icons";
 // import necessary modules from expo-camera
 import { CameraView, useCameraPermissions, CameraType } from "expo-camera";
 
@@ -91,6 +93,7 @@ export default function CameraScan() {
     <View style={styles.container}>
       {/* camera view */}
       <CameraView
+        style={styles.camera}
         facing={cameraType}
         onBarcodeScanned={isScanning ? handleQrCodeScanned : undefined}
         barcodeScannerSettings={{
@@ -99,11 +102,12 @@ export default function CameraScan() {
       />
       {/* button to switch camera type (front/back) */}
       <TouchableOpacity
+        style={styles.flipButton}
         onPress={() =>
           setCameraType((prev) => (prev === "back" ? "front" : "back"))
         }
       >
-        <Text style={styles.text}>Flip Camera</Text>
+        <Ionicons name="camera-reverse" size={24} color="#fff" />
       </TouchableOpacity>
     </View>
   );
@@ -129,5 +133,16 @@ const styles = StyleSheet.create({
   text: {
     color: "#fff",
     fontSize: 16,
+  },
+  camera: {
+    flex: 1,
+    width: "100%",
+  },
+  flipButton: {
+    position: "absolute",
+    bottom: 30,
+    padding: 10,
+    backgroundColor: "#007bff",
+    borderRadius: 5,
   },
 });
