@@ -2,16 +2,19 @@
 from flask import Flask, request, jsonify
 # Importing CORS to allow cross-origin requests
 from flask_cors import CORS
-# Importing the qrCodeAnalyser funtion from the detectionAlgorithm.py file
-from detectionAlgorithm import qrCodeAnalyser
-# Importing the mysql.connector library
-import mysql.connector
+# Importing the urlAnalyser funtion from the detectionAlgorithm.py file
+from detectionAlgorithm import urlAnalyser
+# Importing database functions
+from database import createDbConnection, createDb
 
 # Creating and naming the instance of the Flask class
 app = Flask(__name__)
 
 # Passing the app instance to CORS
 CORS(app)
+
+# Creating a connection to the MySQL database and set up if not already
+createDb()
 
 # Defining the URL to trigger the validate function via a POST request
 @app.route('/validate', methods=['POST'])
@@ -20,50 +23,51 @@ CORS(app)
 def validate():
     # Assigning the JSON (retrieved from the POST request) to the variable data
     data = request.json
-    # Assigning the value of the 'url' key in the JSON to the variable qrCode
-    url = data['url']
-    # Assigning the result of the qrCodeAnalyser function (with the qrCode as an argument) to the variable result
-    result = urlAnalyser(url)
-    # Returning the result as a JSON object
-    return jsonify(result)
+    # Assigning the value of the 'url' key in the JSON to the variable url
+    url = data.get('url')
+    # Assigning the value of the 'username' key in the JSON to the variable username
+    username = data.get('username', None)
+
+    # Attempting to connect to the database
+    try:
+        db = createDbConnection()
+        cursor = db.cursor(dictionary=True)
+        # Checking if the username exists in the database 
+        user_id = None
+        if username:
+            cursor.execute("SELECT userId FROM users WHERE username = %s", (username,)) 
+            user = cursor.fetchone()  
+            # If the username exists, assign the userId to the variable userId
+            if user:
+                userId = user['userId']
+            # If the username does not exist, insert the username into the database and assign the userId to the variable userId
+            else:
+                cursor.execute("INSERT INTO users (username) VALUES (%s)", (username,))
+                db.commit()
+                userId = cursor.lastrowid
+
+        # Assigning the result of the urlAnalyser function (with the url as an argument) to the variable result
+        result = urlAnalyser(url)
+        # Storing the url and user_id in the database if the result is 'bad'
+        if result['result'] == 'bad':
+            cursor.execute("INSERT INTO links (url, userId) VALUES (%s, %s)", (url, userId))
+            db.commit()
+        # Returning the result as a JSON object
+        return jsonify(result)
+    except Exception as e:
+        print("Error handling validation:", e)
+        return jsonify({'result': 'error'})
+    # Always close the connection
+    finally:
+        if db.is_connected():
+            cursor.close()
+            db.close()
+
 
 # Running the Flask app (with debugging enabled)
 if __name__ == '__main__':
     app.run(debug=True)
 
-# Database connection
-try:
-    db = mysql.connector.connect(
-        host="127.0.0.1",
-        port=3306,
-        user="root",
-        password=""
-    )
-    # Check if the connection was successful
-    print("Successfully connected to the database server.")
-
-    # Creating a cursor from the cursor() method of the db object
-    cursor = db.cursor()
-    # Using the cursor to execute SQL queries
-    # Creating the database
-    cursor.execute("CREATE DATABASE IF NOT EXISTS Quishing")
-    cursor.execute("USE Quishing")
-
-    # Creating the tables
-    cursor.execute("CREATE TABLE IF NOT EXISTS users (userId INT AUTO_INCREMENT PRIMARY KEY, username VARCHAR(50), password VARCHAR(50))")
-    cursor.execute("CREATE TABLE IF NOT EXISTS links (linkId INT AUTO_INCREMENT PRIMARY KEY, url VARCHAR(255), userId INT, FOREIGN KEY (userId) REFERENCES users(userId))")
-
-    # Committing the changes to the database
-    db.commit()
-    print("Successfully created the database and tables.")
-
-except Error as e: 
-    print("Error while connecting to MySQL", e)
-finally:
-    if (db.is_connected()):
-        cursor.close()
-        db.close()
-        print("MySQL connection is closed.")
 
 
 
