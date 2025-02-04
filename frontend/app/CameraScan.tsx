@@ -12,6 +12,10 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 // import necessary modules from expo-camera
 import { CameraView, useCameraPermissions, CameraType } from "expo-camera";
+// import useNavigation hook from react-navigation
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { RootStackParamList } from "../types";
 
 // CameraScan component
 export default function CameraScan() {
@@ -21,6 +25,8 @@ export default function CameraScan() {
   const [cameraType, setCameraType] = useState<CameraType>("back");
   // use state to store and manage scanning status
   const [isScanning, setIsScanning] = useState(true);
+  // get navigation prop
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
   // handling when camera permissions have not yet loaded (based on expo-camera documentation: https://docs.expo.dev/versions/latest/sdk/camera/)
   if (!hasPermission) {
@@ -100,6 +106,13 @@ export default function CameraScan() {
           barcodeTypes: ["qr"],
         }}
       />
+      {/* back button */}
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+      >
+        <Ionicons name="arrow-back" size={24} color="#fff" />
+      </TouchableOpacity>
       {/* button to switch camera type (front/back) */}
       <TouchableOpacity
         style={styles.flipButton}
@@ -142,7 +155,15 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 30,
     padding: 10,
-    backgroundColor: "#007bff",
+    backgroundColor: "#000000",
+    borderRadius: 5,
+  },
+  backButton: {
+    position: "absolute",
+    top: 70,
+    left: 20,
+    padding: 10,
+    backgroundColor: "#000000",
     borderRadius: 5,
   },
 });
