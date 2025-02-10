@@ -16,6 +16,10 @@ import { CameraView, useCameraPermissions, CameraType } from "expo-camera";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types";
+import { DEVICE_ADDRESS } from "../config";
+
+// store device IP address from local file
+const device = DEVICE_ADDRESS;
 
 // CameraScan component
 export default function CameraScan() {
@@ -58,12 +62,11 @@ export default function CameraScan() {
     setIsScanning(false);
     // check for link
     if (!data.startsWith("http://") && !data.startsWith("https://")) {
-      Alert.alert("No URL Found", "This is not a Quishing Attempt!");
+      Alert.alert("No URL Found!", "This is not a Quishing Attempt!");
       return;
     }
-
-    // send link to backend
-    fetch("http://localhost:5000/validate", {
+    // fetch request to backend to validate
+    fetch(`http://${device}:5001/validate`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -71,7 +74,40 @@ export default function CameraScan() {
       body: JSON.stringify({ url: data }),
     })
       // handle response from backend (quishing or not)
-      .then((response) => response.json())
+      .then((response) => {
+        // DEBUGGING
+        console.log("Raw response:", response);
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.text(); // Read response as text
+      })
+      .then((text) => {
+        // DEBUGGING
+        console.log("Response text:", text); // Log the response text
+        try {
+          return JSON.parse(text); // Try to parse the text as JSON
+        } catch (error) {
+          // DEBUGGING
+          console.error("Failed to parse JSON:", error);
+          throw new Error("Failed to parse JSON");
+        }
+      })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.text(); // Read response as text
+      })
+      .then((text) => {
+        // DEBUGGING
+        console.log("Response text:", text); // Log the response text
+        try {
+          return JSON.parse(text); // Try to parse the text as JSON
+        } catch (error) {
+          throw new Error("Failed to parse JSON");
+        }
+      })
       .then((result) => {
         if (result.result === "bad") {
           Alert.alert(

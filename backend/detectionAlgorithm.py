@@ -8,11 +8,15 @@ from rapidfuzz import fuzz
 def datasetCheck(url):
     # Dataset has saved as csv file named 'phishingDataset.csv'
     # Read the csv file
-    df = pd.read_csv('phishingDataset.csv')
-    # Check if the url is in the dataset
-    if url in df['url'].values:
-        return True
-    else:
+    try:
+        df = pd.read_csv('phishingDataset.csv')
+        if url in df['url'].values:
+            return True
+    except FileNotFoundError:
+        print("Error: phishingDataset.csv not found!")
+        return False
+    except Exception as e:
+        print("Error reading phishingDataset.csv:", e)
         return False
 
 # Step 2: 1st Heuristic - HTTPS Protocol
@@ -46,27 +50,37 @@ def urlDomainLengthCheck(url):
 # csv of most impersonated domain names: mostImpersonatedDomains.csv 
 # several sources used including: https://blog.cloudflare.com/50-most-impersonated-brands-protect-phishing/#observations-in-the-wild-most-phished-brands & https://mailsuite.com/blog/the-brands-and-industries-that-phishing-scammers-impersonate-the-most/
 def typosquattingCheck(url):
-    domain = findDomain(url)
-    df = pd.read_csv('mostImpersonatedDomains.csv')
-    for domainName in df[0]:
-        similarity = fuzz.ratio(domain, domainName)
-        if similarity >= 80:
-            return True
+    try:
+        domain = findDomain(url)
+        df = pd.read_csv('mostImpersonatedDomains.csv')
+        for domainName in df.iloc[:, 0]:  # Ensure correct column indexing
+            similarity = fuzz.ratio(domain, domainName)
+            if similarity >= 80:
+                return True
+        return False
+    except FileNotFoundError:
+        print("Error: mostImpersonatedDomains.csv not found!")
+        return False
+    except Exception as e:
+        print("Error reading mostImpersonatedDomains.csv:", e)
         return False
 
 # Function to analyse the URL
 def urlAnalyser(url):
+
+    # DEBUGGING PRINT STATEMENT
+    print(f"🔍 Analyzing URL: {url}")
 
     # Variable to store number of heuristics failed
     URLscore = 0
     
     # Calling function to check if URL is in the dataset
     if datasetCheck(url):
-        return {'result': 'Bad URL'}
+        return {'result': 'bad'}
     
     # Calling function to check if URL contains HTTPS
     if not httpsCheck(url):
-        return {'result': 'Bad URL'}
+        return {'result': 'bad'}
     
     # Calling function to check if URL length is within average URL length
     if urlDomainLengthCheck(url):
@@ -76,6 +90,12 @@ def urlAnalyser(url):
     if typosquattingCheck(url):
         URLscore += 1
 
-    # If more that 1 of the heuristics failed, return 'Bad URL'
+    # If more than 1 of the heuristics failed, return 'bad'
     if URLscore > 1:
-        return {'result': 'Bad URL'} 
+        # DEBUGGING PRINT STATEMENT
+        print("🔴 More than one heuristic failed, marking as 'bad'.")
+        return {'result': 'bad'}
+
+    # DEBUGGING PRINT STATEMENT
+    print("✅ URL is safe.")
+    return {'result': 'safe'}
