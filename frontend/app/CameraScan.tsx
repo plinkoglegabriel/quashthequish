@@ -74,39 +74,16 @@ export default function CameraScan() {
       body: JSON.stringify({ url: data }),
     })
       // handle response from backend (quishing or not)
-      .then((response) => {
+      .then(async (response) => {
         // DEBUGGING
         console.log("Raw response:", response);
         if (!response.ok) {
-          throw new Error("Network response was not ok");
+          const error = await response.text();
+          console.error("Backend error:", error);
+          throw new Error(`Network response was not ok: ${error}`);
         }
-        return response.text(); // Read response as text
-      })
-      .then((text) => {
-        // DEBUGGING
-        console.log("Response text:", text); // Log the response text
-        try {
-          return JSON.parse(text); // Try to parse the text as JSON
-        } catch (error) {
-          // DEBUGGING
-          console.error("Failed to parse JSON:", error);
-          throw new Error("Failed to parse JSON");
-        }
-      })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Network response was not ok");
-        }
-        return response.text(); // Read response as text
-      })
-      .then((text) => {
-        // DEBUGGING
-        console.log("Response text:", text); // Log the response text
-        try {
-          return JSON.parse(text); // Try to parse the text as JSON
-        } catch (error) {
-          throw new Error("Failed to parse JSON");
-        }
+        // return json response from backend
+        return response.json();
       })
       .then((result) => {
         if (result.result === "bad") {
