@@ -1,5 +1,5 @@
 // Import necessary modules
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,9 @@ import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../types";
 
+// Import username popup
+import UsernamePopup from "../../components/UsernamePopup";
+
 // Define navigation prop's type
 type NavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -26,6 +29,9 @@ export default function HomeScreen() {
   // Getting navigation prop from useNavigation hook
   const navigation = useNavigation<NavigationProp>();
 
+  // State to store username
+  const [username, setUsername] = useState("");
+
   // If fonts are not loaded, show an loading indicator
   if (!fontsLoaded) {
     return <ActivityIndicator size="large" color="#ffffff" />;
@@ -34,9 +40,9 @@ export default function HomeScreen() {
   return (
     // Home screen render
     <View style={styles.container}>
-      {/* Displaying user's usename (template for now) */}
+      <UsernamePopup visible={!username} onUsernameSet={setUsername} />
       <Text style={[styles.heading2, { fontFamily: "Michroma" }]}>
-        Hello ______!
+        Hello {username}!
       </Text>
       {/* Displaying logo */}
       <Image
