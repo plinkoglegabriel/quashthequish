@@ -1,7 +1,6 @@
 // Importing necessary libraries and tools
 import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, Button, StyleSheet, Modal } from "react-native";
-import axios from "axios";
 import Cookies from "js-cookie";
 
 // Importing device's ip address from config file
@@ -39,12 +38,23 @@ const UsernamePopup: React.FC<UsernamePopupProps> = ({
   // checkUsername function that checks if username is already in use (in the database)
   const checkUsername = async () => {
     try {
-      const response = await axios.post(
-        `http://${DEVICE_ADDRESS}:5001/check-username`,
-        { username }
-      );
+      const response = await fetch(`http://${device}:5001/check-username`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Network response was not ok: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log("Response:", data);
+
       // if username is already in use then display error message to the user
-      if (response.data.exists) {
+      if (data.exists) {
         setError("Username already in use. Please choose another one.");
       } else {
         // if not, username is set and stored in cookies for a year

@@ -16,6 +16,36 @@ CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 # Creating a connection to the MySQL database and set up if not already
 createDb()
 
+# Creating a route to check if the username exists in the database
+@app.route('/check-username', methods=['POST'])
+def checkUsername():
+    # Assigning the JSON (retrieved from the POST request) to the variable data
+    data = request.json
+    username = data.get('username')
+    try:
+        db = createDbConnection()
+        cursor = db.cursor(dictionary=True)
+        cursor.execute("USE Quishing")
+        cursor.execute("SELECT userId FROM users WHERE username = %s", (username,))
+        user = cursor.fetchone()
+        # if the username exists, return a JSON object with the key 'exists' set to True
+        if user:
+            return jsonify({'exists': True})
+        # if the username does not exist, insert the username into the database and return a JSON object with the key 'exists' set to False
+        else:
+            cursor.execute("INSERT INTO users (username) VALUES (%s)", (username,))
+            db.commit()
+            return jsonify({'exists': False})
+    # Error handling
+    except Exception as e:
+        # DEBUGGING PRINT STATEMENT
+        print("Error checking username:", str(e))  # Log the actual error
+        return jsonify({'error': str(e)}), 501
+    # Always close the connection
+    finally:
+        if db.is_connected():
+            cursor.close()
+            db.close()
 # Defining the URL to trigger the validate function via a POST request
 @app.route('/validate', methods=['POST'])
 def validate():
