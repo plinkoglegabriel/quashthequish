@@ -2,7 +2,7 @@
 from flask import Flask, request, jsonify
 # Importing CORS to allow cross-origin requests
 from flask_cors import CORS
-# Importing the urlAnalyser funtion from the detectionAlgorithm.py file
+# Importing the urlAnalyser function from the detectionAlgorithm.py file
 from detectionAlgorithm import urlAnalyser
 # Importing database functions
 from database import createDbConnection, createDb
@@ -13,22 +13,11 @@ app = Flask(__name__)
 # Passing the app instance to CORS
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
-# Adding after_request function to handle CORS responses properly
-@app.after_request
-def after_request(response):
-    response.headers.add("Access-Control-Allow-Origin", "*")
-    response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
-    response.headers.add("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-    return response
-
-
 # Creating a connection to the MySQL database and set up if not already
 createDb()
 
 # Defining the URL to trigger the validate function via a POST request
 @app.route('/validate', methods=['POST'])
-
-# Creating the validate function to receive the POST request
 def validate():
     # Assigning the JSON (retrieved from the POST request) to the variable data
     data = request.json
@@ -43,16 +32,23 @@ def validate():
     try:
         db = createDbConnection()
         cursor = db.cursor(dictionary=True)
+        # Select the database
+        cursor.execute("USE Quishing")
+
+        # Initialize userId to None
+        userId = None
+
         # Checking if the username exists in the database 
-        user_id = None
         if username:
             cursor.execute("SELECT userId FROM users WHERE username = %s", (username,)) 
             user = cursor.fetchone()  
             # If the username exists, assign the userId to the variable userId
+            cursor.close()
             if user:
                 userId = user['userId']
             # If the username does not exist, insert the username into the database and assign the userId to the variable userId
             else:
+                cursor = db.cursor(dictionary=True)
                 cursor.execute("INSERT INTO users (username) VALUES (%s)", (username,))
                 db.commit()
                 userId = cursor.lastrowid
@@ -65,6 +61,10 @@ def validate():
             db.commit()
         # DEBUGGING PRINT STATEMENT
         print("Validation result:", result)
+        # closing the cursor
+        cursor.close()  
+        # closing the database connection
+        db.close()      
         # Returning the result as a JSON object
         return jsonify(result)
     except Exception as e:
@@ -75,7 +75,6 @@ def validate():
     # Always close the connection
     finally:
         if db.is_connected():
-            cursor.close()
             db.close()
 
 # Running the Flask app (with debugging enabled)
