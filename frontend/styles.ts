@@ -32,6 +32,15 @@ export const styles = StyleSheet.create({
       marginBottom: 50,
     },
 
+    paragraph: { 
+      fontSize: 15,
+      color: 'white',
+      textAlign: 'center',
+      marginBottom: 50,
+      marginTop: 20,
+      padding: 10,
+    },
+
     actionsContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',

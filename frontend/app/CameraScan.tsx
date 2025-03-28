@@ -1,5 +1,5 @@
 // import react and other necessary modules from react-native
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -18,19 +18,20 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../types";
 import { DEVICE_ADDRESS } from "../config";
 
-// store device IP address from local file
-const device = DEVICE_ADDRESS;
-
 // CameraScan component
 export default function CameraScan() {
   // use state to store and manage camera permission
   const [hasPermission, requestPermission] = useCameraPermissions();
   // use state to store and manage camera type (front or back)
   const [cameraType, setCameraType] = useState<CameraType>("back");
-  // use state to store and manage scanning status
-  const [isScanning, setIsScanning] = useState(true);
   // get navigation prop
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  // store device IP address from local file
+  const device = DEVICE_ADDRESS;
+  // preventing multiple scans
+  const isScanning = useRef(true);
+  // preventing multiple alerts
+  const alertShown = useRef(false);
 
   // handling when camera permissions have not yet loaded (based on expo-camera documentation: https://docs.expo.dev/versions/latest/sdk/camera/)
   if (!hasPermission) {
@@ -56,56 +57,100 @@ export default function CameraScan() {
     );
   }
 
-  // handling qr code scanning
-  const handleQrCodeScanned = ({ data }: { data: string }) => {
-    // stop scanning
-    setIsScanning(false);
-    // check for link
+  // handling QR code scanning
+  const handleQrCodeScanned = async ({ data }: { data: string }) => {
+    // if scanning is disabled or alert is already shown, return (this prevents multiple scans and alerts)
+    if (!isScanning.current || alertShown.current) return;
+
+    // setting scanning to false and alertShown to true (logic again to prevent multiple scans and alerts)
+    isScanning.current = false;
+    alertShown.current = true;
+
+    // // if data does not start with http:// or https://, show alert that the qr code does not contain a URL and is therefore not a quishing attempt
     if (!data.startsWith("http://") && !data.startsWith("https://")) {
-      Alert.alert("No URL Found!", "This is not a Quishing Attempt!");
+      Alert.alert("No URL Found!", "This is not a Quishing Attempt!", [
+        {
+          text: "OK",
+          // after user has accepted the alert, set scanning to true and alertShown to false
+          onPress: () => {
+            isScanning.current = true;
+            alertShown.current = false;
+          },
+        },
+      ]);
       return;
     }
-    // fetch request to backend to validate
-    fetch(`http://${device}:5001/validate`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ url: data }),
-    })
-      // handle response from backend (quishing or not)
-      .then(async (response) => {
-        // DEBUGGING
-        console.log("Raw response:", response);
-        if (!response.ok) {
-          const error = await response.text();
-          console.error("Backend error:", error);
-          throw new Error(`Network response was not ok: ${error}`);
-        }
-        // return json response from backend
-        return response.json();
-      })
-      .then((result) => {
-        if (result.result === "bad") {
-          Alert.alert(
-            "Oh no! This website has been deemed malicious. Best to give it a miss!"
-          );
-        } else {
-          Alert.alert(
-            "Safe!",
-            "This QR code looks safe! Would you like to proceed to the webpage?",
-            [
-              { text: "No", style: "cancel" },
-              { text: "Yes", onPress: () => Linking.openURL(data) },
-            ]
-          );
-        }
-      })
-      // if there is an error, log the error and show an alert for the user
-      .catch((error) => {
-        console.error("Error:", error);
-        Alert.alert("Error", "Unable to validate the QR code at the moment.");
+
+    // try to send a POST request to the backend to validate the URL
+    try {
+      const response = await fetch(`http://${device}:5001/validate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: data }),
       });
+
+      // handle response from backend (quishing or not)
+      // if response is not ok, log the error and throw an error
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Backend error:", errorText);
+        throw new Error(`Network response was not ok: ${errorText}`);
+      }
+      // return json response from backend
+      const result = await response.json();
+      console.log("Raw response:", result);
+
+      // if the result is bad, show an alert that the website has been deemed malicious
+      // if the result is good, show an alert that the website is safe and ask the user if they want to proceed
+      if (result.result === "bad") {
+        Alert.alert("Oh no!", "This website has been deemed malicious.", [
+          {
+            text: "OK",
+            // after user has accepted the alert, set scanning to true and alertShown to false
+            onPress: () => {
+              isScanning.current = true;
+              alertShown.current = false;
+            },
+          },
+        ]);
+      } else {
+        Alert.alert(
+          "Safe!",
+          "This QR code looks safe! Would you like to proceed?",
+          [
+            {
+              text: "No",
+              onPress: () => {
+                isScanning.current = true;
+                alertShown.current = false;
+              },
+              style: "cancel",
+            },
+            {
+              text: "Yes",
+              // if user clicks yes, open the URL in their default browser
+              onPress: () => {
+                alertShown.current = false;
+                Linking.openURL(data);
+              },
+            },
+          ]
+        );
+      }
+      // catch any errors that occur during the fetch request and alert the user the QR code could not be validated
+    } catch (error) {
+      console.error("Error:", error);
+      Alert.alert("Error", "Unable to validate the QR code.", [
+        {
+          // after user has accepted the alert, set scanning to true and alertShown to false
+          text: "OK",
+          onPress: () => {
+            isScanning.current = true;
+            alertShown.current = false;
+          },
+        },
+      ]);
+    }
   };
 
   return (
