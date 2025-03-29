@@ -51,28 +51,19 @@ export default function HomeScreen() {
       />
       {/* Displaying button to scan */}
       <Text style={[styles.heading2, { fontFamily: "Michroma" }]}>
-        Scan or Upload to Test your QR Code
+        Scan to Test your QR Code
       </Text>
-      <View style={styles.actionsContainer}>
-        {/* Handling logic to CameraScan */}
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => navigation.navigate("CameraScan")}
-        >
-          {/* Camera Icon */}
-          <Ionicons name="camera-outline" size={40} color="white" />
-          <Text style={[styles.buttonText, { fontFamily: "Michroma" }]}>
-            Camera
-          </Text>
-        </TouchableOpacity>
-        {/* Handling logic to UploadScreen (template for now) */}
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="cloud-upload-outline" size={40} color="white" />
-          <Text style={[styles.buttonText, { fontFamily: "Michroma" }]}>
-            Upload
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {/* Handling logic to CameraScan */}
+      <TouchableOpacity
+        style={styles.actionButton}
+        onPress={() => navigation.navigate("CameraScan")}
+      >
+        {/* Camera Icon */}
+        <Ionicons name="camera-outline" size={40} color="white" />
+        <Text style={[styles.buttonText, { fontFamily: "Michroma" }]}>
+          Camera
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 }
