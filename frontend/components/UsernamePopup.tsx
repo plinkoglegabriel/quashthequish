@@ -43,6 +43,7 @@ const UsernamePopup: React.FC<UsernamePopupProps> = ({
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({ username }),
       });
 
