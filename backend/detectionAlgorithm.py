@@ -7,36 +7,36 @@ import requests
 
 
 # Step 1: Function to check if URL has been previously identified as a malicious URL by Phishing URL dataset (DOI: 10.17632/vfszbj9b36.1)
-def datasetCheck(url):
-    try:
-        # connect to the database
-        db = createDbConnection()
-        cursor = db.cursor(dictionary=True)
-        # attempt to find the URL in the database   
-        cursor.execute("USE Quishing")
-        cursor.execute("SELECT url FROM links WHERE url = %s AND userId IS NULL", (url,))
-        result = cursor.fetchall()
-        # close the cursor and database connection
-        cursor.close()
-        db.close()
+# def datasetCheck(url):
+#     try:
+#         # connect to the database
+#         db = createDbConnection()
+#         cursor = db.cursor(dictionary=True)
+#         # attempt to find the URL in the database   
+#         cursor.execute("USE Quishing")
+#         cursor.execute("SELECT url FROM links WHERE url = %s AND userId IS NULL", (url,))
+#         result = cursor.fetchall()
+#         # close the cursor and database connection
+#         cursor.close()
+#         db.close()
 
-        # if the URL is found in the database then True is returned 
-        if result:
-            print("URL found in the database.")
-            return True
+#         # if the URL is found in the database then True is returned 
+#         if result:
+#             print("URL found in the database.")
+#             return True
         
-        # if the URL is not found the phishing.csv is checked (True is returned if found)
-        df = pd.read_csv("phishingDataset.csv")
-        if url in df["url"].values:
-            print("URL found in phishing.csv.")
-            return True
+#         # if the URL is not found the phishing.csv is checked (True is returned if found)
+#         df = pd.read_csv("phishingDataset.csv")
+#         if url in df["url"].values:
+#             print("URL found in phishing.csv.")
+#             return True
         
-        # if the URL is not found in either the database or phishing.csv then False is returned
-        return False
+#         # if the URL is not found in either the database or phishing.csv then False is returned
+#         return False
 
-    except Exception as e:
-        print("Error querying phishing URLs:", e)
-        return False
+#     except Exception as e:
+#         print("Error querying phishing URLs:", e)
+#         return False
 
 
 # Step 2: 1st Heuristic - HTTPS Protocol
@@ -104,8 +104,8 @@ def urlAnalyser(url):
     URLscore = 0
     
     # Calling function to check if URL is in the dataset
-    if datasetCheck(url):
-        return {'result': 'bad'}
+    # if datasetCheck(url):
+    #     return {'result': 'bad'}
     
     # Calling function to check if URL contains HTTPS
     if not httpsCheck(url):
