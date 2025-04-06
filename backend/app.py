@@ -86,22 +86,25 @@ def validate():
         cursor = db.cursor(dictionary=True)
         # Assigning the result of the urlAnalyser function (with the url as an argument) to the variable result
         result = urlAnalyser(url)
+        # Initialising variable newQuish to False
+        newQuish = False
         # Checking if url is in the database and if not, storing the it and user_id that found it (in the database) if the result is 'bad'
         if result['result'] == 'bad':
             cursor.execute("SELECT linkId FROM links WHERE url = (%s)", (url,))
             existingLink = cursor.fetchone()
 
             if not existingLink:
-                 cursor.execute("INSERT INTO links (url, userId) VALUES (%s, %s)", (url, userId))
-                 db.commit()
+                cursor.execute("INSERT INTO links (url, userId) VALUES (%s, %s)", (url, userId))
+                db.commit()
+                newQuish = True
         # DEBUGGING PRINT STATEMENT
         print("Validation result:", result)
         # closing the cursor
         cursor.close()  
         # closing the database connection
         db.close()      
-        # Returning the result as a JSON object
-        return jsonify(result)
+        # Returning the result as a JSON object and adding the newQuish variable (to check if it was a new quish found by user)
+        return jsonify({**result, 'newQuish': newQuish})
     except Exception as e:
         # DEBUGGING PRINT STATEMENT
         print("Error handling validation:", str(e))  # Log the actual error

@@ -103,17 +103,48 @@ export default function CameraScan() {
       // if the result is bad, show an alert that the website has been deemed malicious
       // if the result is good, show an alert that the website is safe and ask the user if they want to proceed
       if (result.result === "bad") {
-        Alert.alert("Oh no!", "This website has been deemed malicious.", [
-          {
-            text: "OK",
-            // after user has accepted the alert, set scanning to true and alertShown to false
-            onPress: () => {
-              isScanning.current = true;
-              alertShown.current = false;
+        const alertMessages: {
+          title: string;
+          message: string;
+          buttonText?: string;
+        }[] = [];
+
+        // push the "malicious" alert
+        alertMessages.push({
+          title: "Oh no!",
+          message: "This website has been deemed malicious.",
+          buttonText: "Okay",
+        });
+
+        // if the result is bad but the user has discovered url (i.e its not already in the database), send a congratulations message
+        if (result.newQuish) {
+          alertMessages.push({
+            title: "On the other hand...Congrats 🎉!",
+            message:
+              "You are the first to find this Quishing attempt! Check the leaderboard to see your new score!",
+            buttonText: "Yay me!",
+          });
+        }
+
+        const showQuishAlerts = (index = 0) => {
+          if (index >= alertMessages.length) {
+            // after user has accepted the alert/s, set scanning to true and alertShown to false
+            isScanning.current = true;
+            alertShown.current = false;
+            return;
+          }
+
+          const current = alertMessages[index];
+          Alert.alert(current.title, current.message, [
+            {
+              text: current.buttonText,
+              onPress: () => showQuishAlerts(index + 1),
             },
-          },
-        ]);
-      } else {
+          ]);
+        };
+
+        showQuishAlerts();
+      } else if (result.result === "safe") {
         Alert.alert(
           "Safe!",
           "This QR code looks safe! Would you like to proceed?",
