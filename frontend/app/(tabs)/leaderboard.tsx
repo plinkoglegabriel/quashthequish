@@ -68,6 +68,22 @@ export default function TabTwoScreen() {
     }
   };
 
+  function getOrdinalSuffix(rank: number): string {
+    const rankingStr = rank.toString();
+    // getting last digit of the ranking
+    const lastDigit = rankingStr.slice(-1);
+    // getting the two last digit of the ranking
+    const lastTwoDigits = rankingStr.slice(-2);
+    // check if digit is 1, 2, or 3 and not 11, 12 or 13 to assign suffix accordingly
+    if (lastDigit === "1" && lastTwoDigits != "11") return "st";
+    if (lastDigit === "2" && lastTwoDigits != "12") return "nd";
+    if (lastDigit === "3" && lastTwoDigits != "13") return "rd";
+    return "th";
+  }
+
+  // store ordinal suffix
+  const ordinalSuffix = ranking !== null ? getOrdinalSuffix(ranking) : "";
+
   if (!fontsLoaded) {
     return <ActivityIndicator size="large" color="#ffffff" />;
   }
@@ -79,7 +95,7 @@ export default function TabTwoScreen() {
           User Leaderboard
         </Text>
         <Text style={[styles.heading2, { fontFamily: "Michroma" }]}>
-          {`You are in ${ranking}th place`}
+          {`You are in ${ranking}${ordinalSuffix} place!`}
         </Text>
       </View>
       <FlatList
