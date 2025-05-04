@@ -4,6 +4,10 @@ from urllib.parse import urlparse
 from rapidfuzz import fuzz
 from database import createDbConnection
 import requests 
+import re
+import whois
+from datetime import datetime
+from urllib.parse import parse_qs
 
 
 # Step 1: Function to check if URL has been previously identified as a malicious URL by Phishing URL dataset (DOI: 10.17632/vfszbj9b36.1)
@@ -68,7 +72,9 @@ def findDomain(url):
 # Based on reseach done by Jeeva and Rajsingh, "the average length of the domain name in phishing URL is found to be greater than 25 characters"
 # Use https://docs.python.org/3/library/urllib.parse.html to extract the domain name from the URL
 def urlDomainLengthCheck(url):
+    # extract the domain name from the URL 
     domain = findDomain(url)
+    print(f"Extracted domain: {domain}")
     if len(domain) > 25:
         return True
     else:
@@ -80,18 +86,134 @@ def urlDomainLengthCheck(url):
 # several sources used including: https://blog.cloudflare.com/50-most-impersonated-brands-protect-phishing/#observations-in-the-wild-most-phished-brands & https://mailsuite.com/blog/the-brands-and-industries-that-phishing-scammers-impersonate-the-most/
 def typosquattingCheck(url):
     try:
-        domain = findDomain(url)
-        df = pd.read_csv('mostImpersonatedDomains.csv')
-        for domainName in df.iloc[:, 0]:  # Ensure correct column indexing
-            similarity = fuzz.ratio(domain, domainName)
+        # Extract domain name and convert to lowercase
+        domain = findDomain(url).lower()
+        # csv of known impersonated domains is read and converted to a list of lowercase domain names
+        df = pd.read_csv('backend/mostImpersonatedDomains.csv', header=None)
+        impersonatedDomains = df[0].str.lower().tolist()
+        # Each domain in the list is compared to the domain in the URL and if the similarity is greater than 80% then true is returned
+        for knownDomain in impersonatedDomains:
+            similarity = fuzz.ratio(domain, knownDomain)
             if similarity >= 80:
+                print(f"Domain {domain} is similar to {knownDomain} (with a {similarity}% match)")
                 return True
         return False
+    # Error handling
     except FileNotFoundError:
         print("Error: mostImpersonatedDomains.csv not found!")
         return False
     except Exception as e:
         print("Error reading mostImpersonatedDomains.csv:", e)
+        return False
+
+# Step 5: 4th Heuristic - URL contains IP address
+# Function to check if URL contains an IP address (if so it is a likely indicator of a phishing URL)
+def ipAddressCheck(url):
+    # Typlical IP address format: xxx.xxx.xxx.xxx
+    ipAddressPattern = r'(\d{1,3}\.){3}\d{1,3}'
+    # Check if the URL contains an IP address (searching for ipAddressPattern) 
+    # True is returned if the pattern is found
+    if re.search(ipAddressPattern, url):
+        print("IP address detected in URL.")
+        return True
+    return False
+
+# Step 6: 5th Heuristic - URL contains too many dots
+# Function to check if URL contains too many dots (more than 3 dots are often present in phishing URL)
+def dotsCheck(url):
+    domain = findDomain(url)
+    dot_count = domain.count('.')
+    print(f"Domain has {dot_count} dots.")
+    return dot_count > 3  
+
+# Step 7: 6th Heuristic - URL contains an @ symbol
+# Function to check if URL contains an @ symbol
+def atSymbolCheck(url):
+    if '@' in url:
+        print("Found '@' symbol in URL.")
+        return True
+    return False
+
+# Step 8: New Heuristic - Number of slashes in URL
+# Function to check if URL contains too many slashes (more than 4 slashes are often present in phishing URL)
+def slashesCheck(url):
+    slash_count = url.count('/')
+    print(f"URL has {slash_count} slashes.")
+    return slash_count > 4
+
+# Step 9: New Heuristic - Unicode characters in URL
+# Function to check if URL contains unicode characters (non-ASCII characters) 
+# unicode characters are often used in phishing URLs to obfuscate it making the user think it is a legitimate URL
+def unicodeCharactersCheck(url):
+    try:
+        # Attempt to encode the URL as ASCII and if it fails then unicode characters are present and true is returned
+        url.encode('utf-8').decode('ascii')
+    except UnicodeDecodeError:
+        print("Unicode characters detected in URL.")
+        return True
+    return False
+
+# Step 10: New Heuristic - Subdomains
+# Function to check if URL contains subdomains (more than 2 subdomains are often present in phishing URL)
+def subdomainCountCheck(url):
+    domain = findDomain(url)
+    count = domain.count('.')
+    print(f"Domain has {count} subdomains.")
+    return count > 3
+
+# Step 11: New Heuristic - Hyphen in the domain name
+# Function to check if URL contains hyphen in the domain name (more than 1 hyphen is often present in phishing URL)
+def hyphenInDomainCheck(url):
+    domain = findDomain(url)
+    if domain.count('-') > 1:
+        print(f"Hyphen detected in the domain: {domain}")
+        return True
+    return False
+
+# Step 12: New Heuristic - Suspicious keywords in the path portion of the URL can indicate phishing 
+# Especially considering this is for quishing, a first scan for a non malicious URL would usually not require a login and/or payment)
+def suspiciousWordsCheck(url):
+    path = urlparse(url).path
+    keywords = ['login', 'paypal', 'account', 'confirm', 'payment', 'id', 'verify', 'suspend']
+    if any(keyword in path.lower() for keyword in keywords):
+        print(f"Suspicious keyword in path: {path}")
+        return True
+    return False
+
+# Step 13: New Heuristic - Length of the URL
+# Function to check if URL is too long (phishing URLs usually contain more a large number of characters)
+def urlLengthCheck(url):
+    if len(url) > 75:
+        print(f"URL is longer than 75 characters: {url}")
+        return True
+    return False
+
+# Step 14: New Heuristic - Top Level Domain Check
+# Function to check if the URL has a valid top-level domain (TLD) e.g. .com, .net, .org, etc.
+def topLevelDomainCheck(url):
+    domain = findDomain(url)
+    tlds = ['com', 'net', 'org', 'gov', 'edu', 'uk', 'eu', 'ca', 'us', 'au', 'de', 'fr', 'it', 'jp']
+    domainParts = domain.split('.')
+    if len(domainParts) > 1:
+        lastTwoParts = '.'.join(domainParts[-2:])
+    if lastTwoParts in tlds:
+        return False
+    if domainParts[-1] in tlds:
+        return False
+    print(f"Invalid top-level domain: {domain}")
+    return True
+
+# Step 15: New Heuristic - Check for redirects
+# Function to check if the URL has too many redirects (more than 3 redirects are often present in phishing URL)
+def redirectCheck(url):
+    try:
+        response = requests.get(url, allow_redirects=True, timeout=5)
+        if len(response.history) > 3:
+            print(f"URL has {len(response.history)} redirects.")
+            return True
+        return False
+    except requests.RequestException as e:
+        print(f"Error checking redirects: {e}")
         return False
 
 # Function to analyse the URL
@@ -118,7 +240,51 @@ def urlAnalyser(url):
     # Calling function to check if URL is typosquatting
     if typosquattingCheck(url):
         URLscore += 1
+    
+    # Calling function to check if URL contains an IP address
+    if ipAddressCheck(url):
+        URLscore += 1
+    
+    # Calling function to check if URL contains too many dots
+    if dotsCheck(url):
+        URLscore += 1
+    
+    # Calling function to check if URL contains an @ symbol
+    if atSymbolCheck(url):
+        URLscore += 1
+    
+    # Calling function to check if URL contains too many slashes
+    if slashesCheck(url):
+        URLscore += 1
+    
+    # Calling function to check if URL contains unicode characters
+    if unicodeCharactersCheck(url):
+        URLscore += 1
+    
+    # Calling function to check if URL contains subdomains
+    if subdomainCountCheck(url):
+        URLscore += 1
+    
+    # Calling function to check if URL contains hyphen in hostname
+    if hyphenInDomainCheck(url):
+        URLscore += 1
+    
+    # Calling function to check if URL contains keywords in path
+    if suspiciousWordsCheck(url):
+        URLscore += 1
+    
+    # Calling function to check if URL is too long
+    if urlLengthCheck(url):
+        URLscore += 1
 
+    # Calling function to check if URL has a valid top-level domain
+    if topLevelDomainCheck(url):
+        URLscore += 1
+    
+    # Calling function to check if URL has too many redirects
+    if redirectCheck(url):
+        URLscore += 1
+        
     # If more than 1 of the heuristics failed, return 'bad'
     if URLscore > 1:
         # DEBUGGING PRINT STATEMENT
