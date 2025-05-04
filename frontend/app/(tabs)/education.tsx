@@ -27,19 +27,19 @@ export default function EducationScreen() {
   const safetyTips = [
     {
       id: "1",
-      title: "Recognize Phishing Scams",
+      title: "Avoiding Qushing",
       description:
-        "Learn how to spot fake emails and messages that are attempting to steal your data.",
-      link: "https://www.cybersecurity.org/phishing",
-      image: require("../../assets/images/phishing.jpg"),
+        "Understand how QR codes work and how to stay safe when scanning them.",
+      link: "https://www.scam-detector.com/quishing/",
+      image: require("../../assets/images/qr-codes.png"),
     },
     {
       id: "2",
-      title: "How QR Codes Work",
+      title: "Phishing Awareness",
       description:
-        "Understand how QR codes work and how to stay safe when scanning them.",
-      link: "https://www.cybersecurity.org/qr-codes",
-      image: require("../../assets/images/qr-codes.png"),
+        "Learn how to spot fake emails and messages that are attempting to steal your data.",
+      link: "https://www.phishing.org/what-is-phishing",
+      image: require("../../assets/images/phishing.jpg"),
     },
   ];
 
