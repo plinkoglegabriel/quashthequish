@@ -35,7 +35,7 @@ def testDetection(urls):
         return (url, result['result'])
 
     # Number of threads based on my cpu
-    maxThreads = 50  
+    maxThreads = 500
 
     # Using ThreadPoolExecutor to process URLs concurrently (speed up testing)
     with ThreadPoolExecutor(max_workers=maxThreads) as executor:

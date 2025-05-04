@@ -8,6 +8,8 @@ import re
 import whois
 from datetime import datetime
 from urllib.parse import parse_qs
+import ssl
+import socket
 
 
 # Step 1: Function to check if URL has been previously identified as a malicious URL by Phishing URL dataset (DOI: 10.17632/vfszbj9b36.1)
@@ -93,8 +95,8 @@ def typosquattingCheck(url):
         impersonatedDomains = df[0].str.lower().tolist()
         # Each domain in the list is compared to the domain in the URL and if the similarity is greater than 80% then true is returned
         for knownDomain in impersonatedDomains:
-            similarity = fuzz.ratio(domain, knownDomain)
-            if similarity >= 80:
+            similarity = fuzz.token_sort_ratio(domain, knownDomain)
+            if similarity >= 80 and similarity != 100:
                 print(f"Domain {domain} is similar to {knownDomain} (with a {similarity}% match)")
                 return True
         return False
@@ -122,9 +124,9 @@ def ipAddressCheck(url):
 # Function to check if URL contains too many dots (more than 3 dots are often present in phishing URL)
 def dotsCheck(url):
     domain = findDomain(url)
-    dot_count = domain.count('.')
-    print(f"Domain has {dot_count} dots.")
-    return dot_count > 3  
+    count = domain.count('.')
+    print(f"Domain has {count} dots.")
+    return count > 3  
 
 # Step 7: 6th Heuristic - URL contains an @ symbol
 # Function to check if URL contains an @ symbol
@@ -174,7 +176,7 @@ def hyphenInDomainCheck(url):
 # Especially considering this is for quishing, a first scan for a non malicious URL would usually not require a login and/or payment)
 def suspiciousWordsCheck(url):
     path = urlparse(url).path
-    keywords = ['login', 'paypal', 'account', 'confirm', 'payment', 'id', 'verify', 'suspend']
+    keywords = ['login', 'paypal', 'account', 'confirm', 'payment', 'id', 'verify', 'suspend', 'reset', 'password']
     if any(keyword in path.lower() for keyword in keywords):
         print(f"Suspicious keyword in path: {path}")
         return True
@@ -215,6 +217,52 @@ def redirectCheck(url):
     except requests.RequestException as e:
         print(f"Error checking redirects: {e}")
         return False
+
+# Step 16: New Heuristic - Check the url's path length
+# Function to check the length of the url's path is not more than 50 as long paths like this can be strong indicators that the url is malicious
+def pathLengthCheck(url):
+    path = urlparse(url).path
+    return len(path) > 50 
+
+# Step 17: New Heuristic - Check the age of the domain
+# Function to check if the domain is new (typical indicator)
+def domainAgeCheck(url):
+    # Try to get domain's creation date and then age and if domain is younger than 180 days (6 months), True is returned (as it is an indicator of phishing)
+    try:
+        domain = findDomain(url)
+        domainInfo = whois.whois(domain)
+        if isinstance(creationDate, list):
+            creationDate = domainInfo.creation_date[0] if isinstance(domainInfo.creation_date, list) else domainInfo.creation_date
+        domainAge = (datetime.now() - creationDate).days
+        if domainAge < 180: 
+            return True
+        return False
+    except Exception as e:
+        print(f"Error checking domain age: {e}")
+    return False
+
+# Step 18: New Heuristic - Check if path contains suspicious port numbers 
+# Function to check for suspicious port numbers (indicator of phishing)
+def portNumberCheck(url):
+    port = urlparse(url).port
+    if port and port not in [80, 443]:  
+        return True
+    return False
+
+# Step 19: New Heuristic - Check SSL certificate
+# Function to check if the URL has a valid SSL certificate
+def sslCheck(url):
+    try:
+        host = findDomain(url)
+        sslContext = ssl.create_default_context()
+        conn = sslContext.wrap_socket(socket.socket(socket.AF_INET), server_hostname=host)
+        conn.connect((host, 443))
+        cert = conn.getpeercert()
+        if cert:
+            return True
+    except ssl.SSLError as e:
+        print(f"SSL Error: {e}")
+    return False
 
 # Function to analyse the URL
 def urlAnalyser(url):
@@ -284,7 +332,23 @@ def urlAnalyser(url):
     # Calling function to check if URL has too many redirects
     if redirectCheck(url):
         URLscore += 1
-        
+    
+    # Calling function to check if URL has a long path
+    if pathLengthCheck(url):
+        URLscore += 1
+    
+    # Calling function to check if URL has a new domain
+    if domainAgeCheck(url):
+        URLscore += 1
+    
+    # Calling function to check if URL has suspicious port numbers
+    if portNumberCheck(url):
+        URLscore += 1
+    
+    # Calling function to check if URL has a valid SSL certificate
+    if not sslCheck(url):
+        URLscore += 1
+
     # If more than 1 of the heuristics failed, return 'bad'
     if URLscore > 1:
         # DEBUGGING PRINT STATEMENT
