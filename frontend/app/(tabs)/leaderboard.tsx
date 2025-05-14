@@ -62,7 +62,11 @@ export default function TabTwoScreen() {
       const data = await response.json();
       console.log("User data response:", data);
       // setting ranking to ranking fetched from backend
-      setRanking(data.ranking);
+      if (data && data.ranking !== undefined) {
+        setRanking(data.ranking);
+      } else {
+        console.error("User ranking not found.");
+      }
     } catch (error) {
       console.error("Error fetching user stats:", error);
     }
@@ -95,7 +99,9 @@ export default function TabTwoScreen() {
           User Leaderboard
         </Text>
         <Text style={[styles.heading2, { fontFamily: "Michroma" }]}>
-          {`You are in ${ranking}${ordinalSuffix} place!`}
+          {ranking !== null
+            ? `You are in ${ranking}${ordinalSuffix} place!`
+            : "Find your ranking!"}
         </Text>
       </View>
       <FlatList
