@@ -1,6 +1,14 @@
 // Importing necessary libraries and tools
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, Button, StyleSheet, Modal } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
+  Image,
+} from "react-native";
 import Cookies from "js-cookie";
 
 // Importing device's ip address from config file
@@ -73,6 +81,11 @@ const UsernamePopup: React.FC<UsernamePopupProps> = ({
     // Modal that pops up when the user enters the application
     <Modal visible={visible} transparent={true} animationType="slide">
       <View style={styles.container}>
+        {/* Displaying logo */}
+        <Image
+          source={require("../assets/images/quash-the-quish-logo.png")}
+          style={styles.image}
+        />
         <Text style={styles.title}>Please enter a username</Text>
         <TextInput
           style={styles.input}
@@ -81,7 +94,9 @@ const UsernamePopup: React.FC<UsernamePopupProps> = ({
           placeholder="Username"
         />
         {error ? <Text style={styles.error}>{error}</Text> : null}
-        <Button title="Submit" onPress={checkUsername} />
+        <TouchableOpacity style={styles.submitButton} onPress={checkUsername}>
+          <Text style={styles.submitButtonText}>Submit</Text>
+        </TouchableOpacity>
       </View>
     </Modal>
   );
@@ -91,9 +106,10 @@ const UsernamePopup: React.FC<UsernamePopupProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
+    justifyContent: "flex-start",
     alignItems: "center",
     backgroundColor: "black",
+    paddingTop: 175,
   },
   title: {
     fontSize: 24,
@@ -105,10 +121,28 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: "white",
     marginBottom: 10,
+    borderRadius: 10, // curved corners
   },
   error: {
     color: "red",
     marginBottom: 10,
+  },
+  submitButton: {
+    backgroundColor: "white",
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+    marginTop: 10,
+  },
+  submitButtonText: {
+    color: "black",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  image: {
+    width: 300,
+    height: 180,
+    padding: 10,
   },
 });
 
