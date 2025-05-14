@@ -11,7 +11,10 @@ This is a mobile app developed using **Expo** (frontend) and **Flask** (backend)
    ```
 
 2. Activate the virtual environment:
-   -- source venv/bin/activate
+
+   ```bash
+   source venv/bin/activate
+   ```
 
 3. Install necessary modules:
 
