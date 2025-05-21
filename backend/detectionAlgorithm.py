@@ -10,6 +10,7 @@ from datetime import datetime
 from urllib.parse import parse_qs
 import ssl
 import socket
+import os
 
 
 # Step 1: Function to check if URL has been previously identified as a malicious URL by Phishing URL dataset (DOI: 10.17632/vfszbj9b36.1)
@@ -91,7 +92,8 @@ def typosquattingCheck(url):
         # Extract domain name and convert to lowercase
         domain = findDomain(url).lower()
         # csv of known impersonated domains is read and converted to a list of lowercase domain names
-        df = pd.read_csv('backend/mostImpersonatedDomains.csv', header=None)
+        csvPath = os.path.join(os.path.dirname(__file__), 'mostImpersonatedDomains.csv')
+        df = pd.read_csv(csvPath, header=None)
         impersonatedDomains = df[0].str.lower().tolist()
         # Each domain in the list is compared to the domain in the URL and if the similarity is greater than 80% then true is returned
         for knownDomain in impersonatedDomains:
@@ -231,6 +233,9 @@ def domainAgeCheck(url):
     try:
         domain = findDomain(url)
         domainInfo = whois.whois(domain)
+        creationDate = domainInfo.creation_date
+        if not creationDate:
+            raise ValueError("No creation date available")
         if isinstance(creationDate, list):
             creationDate = domainInfo.creation_date[0] if isinstance(domainInfo.creation_date, list) else domainInfo.creation_date
         domainAge = (datetime.now() - creationDate).days
@@ -268,7 +273,7 @@ def sslCheck(url):
 def urlAnalyser(url):
 
     # DEBUGGING PRINT STATEMENT
-    print(f"🔍 Analyzing URL: {url}")
+    print(f"🔍 Analysing URL: {url}")
 
     # Variable to store number of heuristics failed
     URLscore = 0
