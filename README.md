@@ -4,6 +4,16 @@
 
 This is a mobile app developed using **Expo** (frontend) and **Flask** (backend) for detecting suspicious QR codes.
 
+## What must be installed in order to run this project
+
+- Node.js and npm https://nodejs.org
+- Python 3.x installed https://www.python.org/downloads/
+- Expo CLI installed globally:
+
+```bash
+npm install -g expo-cli
+```
+
 ## 1. Getting Started (Backend)
 
 1. Create a virtual environment in project root directory:
@@ -47,6 +57,20 @@ This is a mobile app developed using **Expo** (frontend) and **Flask** (backend)
 
    ```bash
    export const DEVICE_ADDRESS = `YOUR DEVICE'S IP ADDRESS`;
+   ```
+
+   - To find your device's IP address, in Terminal write:
+
+   # For Windows
+
+   ```bash
+   ipconfig
+   ```
+
+   # For macOS/Linux
+
+   ```bash
+   ifconfig
    ```
 
 3. Start the app
