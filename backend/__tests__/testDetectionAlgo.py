@@ -1,5 +1,10 @@
+# Old test file moved into new __tests__ directory
 # Importing libraries
 import pandas as pd
+import sys
+# Adding the parent directory to the system path so that urlAnalyser function can be imported
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from detectionAlgorithm import urlAnalyser
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -67,5 +72,5 @@ def testDetection(urls):
 
 
 if __name__ == "__main__":
-    phishingURLs = loadPhishingURLs('backend/phishingDataset.csv')
+    phishingURLs = loadPhishingURLs('../phishingDataset.csv')
     testDetection(phishingURLs)
