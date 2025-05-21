@@ -204,6 +204,7 @@ export default function CameraScan() {
       </TouchableOpacity>
       {/* button to switch camera type (front/back) */}
       <TouchableOpacity
+        testID="flipButton"
         style={styles.flipButton}
         onPress={() =>
           setCameraType((prev) => (prev === "back" ? "front" : "back"))

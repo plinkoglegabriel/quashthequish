@@ -10,11 +10,15 @@ let mockPermission: any = [{ granted: true }, jest.fn()];
 // check alert behaviour
 jest.spyOn(Alert, "alert");
 
+// container to store the scan simulation
+let currentScanSimulation: any = null;
+
 // expo-camera mock using jest and mocked permission state
 jest.mock("expo-camera", () => {
   const ReactNative = require("react-native");
   return {
     CameraView: (props: any) => {
+      currentScanSimulation = props.onBarcodeScanned;
       return <ReactNative.Text>Mock Camera</ReactNative.Text>;
     },
     useCameraPermissions: () => mockPermission,
@@ -51,5 +55,33 @@ describe("CameraScan", () => {
     expect(flipButton).toBeTruthy();
     // test if the state changes (camera flips)
     fireEvent.press(flipButton);
+  });
+
+  // testing QR code scanning (bad QR code)
+  it("handles the scanning of a bad QR code as expected", async () => {
+    // mocking the global fetch function
+    global.fetch = jest.fn(() =>
+      // getting the fetch to return a promise of objects
+      Promise.resolve({
+        ok: true,
+        // simulating a bad QR code response (without network request)
+        json: () => Promise.resolve({ result: "bad", newQuish: false }),
+      })
+    ) as jest.Mock;
+
+    // rendering the CameraScan component
+    render(<CameraScan />);
+    // simulating the QR code scan (using the mocked function)
+    await act(async () => {
+      await currentScanSimulation({ data: "https://malicious.com" });
+    });
+
+    // expected alert to be shown
+    expect(Alert.alert).toHaveBeenCalledWith(
+      "Oh no!",
+      "This website has been deemed malicious.",
+      // any array of buttons/actions accepted in alert
+      expect.any(Array)
+    );
   });
 });
