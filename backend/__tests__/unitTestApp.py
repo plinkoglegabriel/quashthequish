@@ -51,6 +51,37 @@ class FlaskAppTestCase(unittest.TestCase):
         # Check the response status code and that the result is 'bad'
         self.assertEqual(response.status_code, 200)
         self.assertIn('bad', response.get_data(as_text=True))
+        
+    # Mocks for the database connection function
+    @patch('app.createDbConnection')
+    def testingUsernameExisting(self, createDbFunctionMock):
+        # Making database connection using the mocked function
+        mockConnection = createDbFunctionMock.return_value
+        mockCursor = mockConnection.cursor.return_value
+        mockCursor.fetchone.return_value = {'userId': 1} 
+
+        # Simulate an existing user
+        response = self.app.post('/check-username', json={'username': 'existingUser'})
+        self.assertEqual(response.status_code, 200)
+        
+        # Parse JSON to assert value, checkin
+        json_data = response.get_json()
+        self.assertTrue(json_data.get('exists'))
+
+    @patch('app.createDbConnection')
+    def testingUsernameCreationOfNewUser(self, createDbFunctionMock):
+        # Mocked database connection where new user does not exist
+        mockConnection = createDbFunctionMock.return_value
+        mockCursor = mockConnection.cursor.return_value
+        mockCursor.fetchone.return_value = None  
+
+        # Simulate a new user
+        response = self.app.post('/check-username', json={'username': 'newUser'})
+        self.assertEqual(response.status_code, 200)
+
+        # Parse JSON and assert value
+        json_data = response.get_json()
+        self.assertFalse(json_data.get('exists'))
 
 if __name__ == '__main__':
     unittest.main()
