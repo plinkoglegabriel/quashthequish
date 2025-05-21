@@ -37,3 +37,8 @@ config.js
 *.tsbuildinfo
 
 app-example
+
+# python bytecode
+__pycache__/
+*.pyc
+
