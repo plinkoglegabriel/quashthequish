@@ -1,5 +1,7 @@
 # Quash the Quish: A Mobile App for Detecting Suspicious QR Codes
 
+## User Manual
+
 This is a mobile app developed using **Expo** (frontend) and **Flask** (backend) for detecting suspicious QR codes.
 
 ## 1. Getting Started (Backend)
