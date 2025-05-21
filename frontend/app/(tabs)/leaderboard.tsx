@@ -25,33 +25,23 @@ export default function TabTwoScreen() {
   // store device IP address from local file
   const device = DEVICE_ADDRESS;
 
-  // using useFocusEffect instead of useEffect to fetch data so that data updates each time the leaderboard is shown
-  useFocusEffect(
-    // using useCallback to prevent unnecessary re-renders
-    React.useCallback(() => {
-      async function fetchData() {
-        await fetchLeaderboardData();
-        await fetchUserData();
-        setLoading(false);
-      }
-      fetchData();
-    }, [])
-  );
-
   // getting data from leaderboard function in app.py
-  const fetchLeaderboardData = async () => {
+  const fetchLeaderboardData = async (device: string, setData: Function) => {
     try {
       const response = await fetch(`http://${device}:5001/leaderboard`);
       const data = await response.json();
-      setLeaderboardData(data);
+      setData(data);
     } catch (error) {
       console.error("Error fetching data:", error);
     }
   };
 
   // getting username from cookies
-  const fetchUserData = async () => {
-    const username = Cookies.get("username");
+  const fetchUserData = async (
+    device: string,
+    setRanking: Function,
+    username?: string
+  ) => {
     if (!username) return;
 
     // using username to fetch data from userData/<username> function in app.py
@@ -71,6 +61,20 @@ export default function TabTwoScreen() {
       console.error("Error fetching user stats:", error);
     }
   };
+
+  // using useFocusEffect instead of useEffect to fetch data so that data updates each time the leaderboard is shown
+  useFocusEffect(
+    // using useCallback to prevent unnecessary re-renders
+    React.useCallback(() => {
+      async function fetchData() {
+        await fetchLeaderboardData(device, setLeaderboardData);
+        const username = Cookies.get("username");
+        await fetchUserData(device, setRanking, username);
+        setLoading(false);
+      }
+      fetchData();
+    }, [])
+  );
 
   function getOrdinalSuffix(rank: number): string {
     const rankingStr = rank.toString();
